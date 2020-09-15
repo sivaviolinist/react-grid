@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Responsive, WidthProvider } from "react-grid-layout";
+import axios from "axios";
+import cheerio from "cheerio";
+import { Carousel, Card } from "brix-core-components-lib";
+import parse from "html-react-parser";
 
 import "./App.css";
 
@@ -15,10 +19,31 @@ export default function MyFirstGrid() {
     setWidth(window.innerWidth);
   };
 
+  const [cardContent, setCardContent] = useState([]);
+
   useEffect(() => {
     window.addEventListener("resize", updateWidth);
     return () => window.removeEventListener("resize", updateWidth);
   });
+
+  useEffect(() => {
+    axios
+      .get(
+        "https://objectstorage.us-phoenix-1.oraclecloud.com/n/infinity/b/cdn-dev/o/sample.html"
+      )
+      .then(({ data }) => {
+        const $ = cheerio.load(data);
+
+        let devtoList = [];
+
+        $(".card-container .card-data").each(function (i, elem) {
+          devtoList[i] = $(this).html();
+        });
+
+        setCardContent(devtoList);
+      })
+      .catch((err) => {});
+  }, []);
 
   const layoutOne = () => {
     let layoutLG = [
@@ -306,6 +331,17 @@ export default function MyFirstGrid() {
       xs: layoutSM,
     };
 
+    const renderCards = () => {
+      const cc = cardContent.map((card) => {
+        return (
+          <Card>
+            <Card.Body>{parse(card)}</Card.Body>
+          </Card>
+        );
+      });
+      return cc;
+    };
+
     return (
       <GridLayout
         breakpoints={{ lg: 1280, sm: 767, xs: 468 }}
@@ -317,7 +353,9 @@ export default function MyFirstGrid() {
       >
         <div key="a">
           <span className="widget-drag-handle">Drag Here</span>
-          <div className="content">1</div>
+          <div className="content">
+            <Carousel width="xl">{renderCards()}</Carousel>
+          </div>
         </div>
         <div key="b">
           <span className="widget-drag-handle">Drag Here</span>
@@ -806,6 +844,7 @@ export default function MyFirstGrid() {
           textAlign: "center",
           marginBottom: "10px",
         }}
+        className="thm-rw"
       >
         Width: {width}
         {!showLayoutOne && (
